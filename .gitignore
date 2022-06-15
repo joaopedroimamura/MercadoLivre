@@ -1,5 +1,5 @@
 /drivers
-/.idea
+.idea/
 __pycache__
 .env
 .*/
