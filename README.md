@@ -54,7 +54,7 @@ sugere a imagem. ![Logs](./images/logs.jpg)
 
 ## Observações importantes
 
-1. O atributo requisitado referente ao `código do produto` não foi encontrado
+1. O atributo requisitado referente ao `código do produto` não foi encontrado no HTML do Mercado Livre
 e por esse motivo todos os produtos possuem esse atributo `None (null)`.
 
 2. Algumas pesquisas não retornam lista de produtos, mas sim uma página
