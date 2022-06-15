@@ -1,13 +1,13 @@
-# Depois ver regras de import
+from locale import currency, setlocale, LC_ALL
+from time import sleep
+
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
-from time import sleep
 
 
 class MercadoLivre:
-    # otimizado
-    def __init__(self, url_home, search_text, driver, page):
-        self.url_home = url_home
+    def __init__(self, search_text, driver, page):
+        self.url_home = 'https://www.mercadolivre.com.br/'
         self.search_text = search_text
         self.driver = driver
         self.page = page
@@ -19,17 +19,14 @@ class MercadoLivre:
         self.scroll()
         self.parents = self.products_list()
 
-    # otimizado
     def open_site(self) -> None:
         self.driver.maximize_window()
         self.driver.get(self.url_home)
 
-    # otimizado
     def search_product(self) -> None:
         text_input = self.driver.find_element(By.NAME, 'as_word')
         text_input.send_keys(self.search_text, Keys.ENTER)
 
-    # otimizado
     def scroll(self):
         y = 1000
 
@@ -38,75 +35,91 @@ class MercadoLivre:
             y += 1000
             sleep(.6)
 
-    # otimizado
     def products_list(self) -> list:
         return self.driver.find_elements(By.CLASS_NAME, 'ui-search-result__wrapper')
 
-    # otimizado
     def products_name(self) -> list:
         names = self.driver.find_elements(By.CLASS_NAME, 'ui-search-item__title')
         return [name.text for name in names]
 
-    # otimizado
     def products_price(self) -> list:
         prices = []
-        price_div = self.driver.find_elements(By.CLASS_NAME, 'ui-search-price.ui-search-price--size-medium')
+        price_divs = self.driver.find_elements(By.CLASS_NAME, 'ui-search-price.ui-search-price--size-medium')
 
-        for price_element in price_div:
-            price = price_element.find_element(By.XPATH, './/div//span//span').text
+        setlocale(LC_ALL, 'pt_BR')
+
+        for price_div in price_divs:
+            price = price_div.find_element(By.XPATH, './/div//span//span').text
 
             if price:
                 price = price.split(' ')
 
                 if len(price) == 5:
-                    price = f'R${price[0]}.{price[3]}'
+                    price = float(f'{price[0]}.{price[3]}')
                 else:
-                    price = f'R${price[0]}.00'
+                    price = float(f'{price[0]}')
 
-                prices.append(price)
+                format_price = currency(price, grouping=True)
+                prices.append(format_price)
 
-        # remove preço de produtos em anúncio
         difference = abs(len(self.products_name()) - len(prices))
 
+        # remove preço de produtos em anúncio
         for _ in range(difference):
             prices.pop(0)
 
         return prices
 
-    # otimizar
     def products_price_installment(self) -> list:
         prices = []
         texts1 = []
         texts2 = []
         installments = []
 
-        installment_div = self.driver.find_elements(By.CLASS_NAME, 'ui-search-result__content-wrapper')
-
-        for installment in installment_div:
+        # region preco da parcela
+        for parent in self.parents:
             try:
-                xpath = './/div//span//div[2]//div//span//span'
-                price = installment.find_element(By.XPATH, xpath).text
-                price = price.split(' ')
+                xpath = './/div[@class="ui-search-price ui-search-price--size-x-tiny ui-search-color--BLACK"]' \
+                        '//span[@class="price-tag-text-sr-only"]'
+                price = parent.find_element(By.XPATH, xpath).text
 
-                if len(price) == 5:
-                    price = f'R${price[0]}.{price[3]}'
-                else:
-                    price = f'R${price[0]}.00'
-            except:
-                try:
-                    xpath = './/div[2]//div[1]//div[1]//span//div[2]//div[2]//div//span//span'
-                    price = installment.find_element(By.XPATH, xpath).text
+                setlocale(LC_ALL, 'pt_BR')
+
+                if price:
                     price = price.split(' ')
 
                     if len(price) == 5:
-                        price = f'R${price[0]}.{price[3]}'
+                        price = float(f'{price[0]}.{price[3]}')
                     else:
-                        price = f'R${price[0]}.00'
+                        price = float(f'{price[0]}')
+
+                    format_price = currency(price, grouping=True)
+                    prices.append(format_price)
+
+            except:
+                try:
+                    xpath = './/div[@class="ui-search-price ui-search-price--size-x-tiny ' \
+                            'ui-search-color--LIGHT_GREEN"]//span[@class="price-tag-text-sr-only"]'
+                    price = parent.find_element(By.XPATH, xpath).text
+
+                    setlocale(LC_ALL, 'pt_BR')
+
+                    if price:
+                        price = price.split(' ')
+
+                        if len(price) == 5:
+                            price = float(f'{price[0]}.{price[3]}')
+                        else:
+                            price = float(f'{price[0]}')
+
+                        format_price = currency(price, grouping=True)
+                        prices.append(format_price)
+
                 except:
-                    price = None
+                    prices.append(None)
+        # endregion
 
-            prices.append(price)
-
+        # region numero de parcelas
         for i in range(1, len(self.parents) + 1):
             try:
                 xpath = f'/html/body/main/div/div[1]/section/ol/li[{i}]' \
@@ -154,6 +167,7 @@ class MercadoLivre:
                                 texts2.append(text)
                             except:
                                 texts2.append(None)
+        # endregion
 
         for cont in range(len(prices)):
             if texts2:
@@ -163,17 +177,15 @@ class MercadoLivre:
 
         return installments
 
-    # otimizar
     def products_image(self) -> list:
         images = []
-        image_div = self.driver.find_elements(By.CLASS_NAME, 'ui-search-result-image__element')
 
-        for image in image_div:
+        for parent in self.parents:
+            image = parent.find_element(By.XPATH, './/div[@data-index="0"]//img')
             images.append(image.get_attribute('src'))
 
         return images
 
-    # otimizado
     def products_link(self) -> list:
         links = []
 
@@ -189,105 +201,61 @@ class MercadoLivre:
 
         return links
 
-    # otimizar
     def products_shipping(self) -> list:
         shippings = []
 
         for parent in self.parents:
+            xpath = './/p[@class="ui-search-item__shipping ui-search-item__shipping--free"]'
+
             try:
-                free_shipping = parent.find_element(By.XPATH, './/div//div[2]//div[2]//div[1]//div[2]//div//p').text
-
-                if 'gratis' in free_shipping or 'grátis' in free_shipping:
-                    free_shipping = 'Frete grátis'
-                else:
-                    free_shipping = None
+                shipping = parent.find_element(By.XPATH, xpath).text
             except:
-                try:
-                    free_shipping = parent.find_element(By.XPATH, './/div//a//div//div[2]//div//p').text
+                shipping = None
 
-                    if 'gratis' in free_shipping or 'grátis' in free_shipping:
-                        free_shipping = 'Frete grátis'
-                    else:
-                        free_shipping = None
-                except:
-                    try:
-                        free_shipping = parent.find_element(By.XPATH, './/div//a/div//div[3]//div//p').text
-
-                        if 'gratis' in free_shipping or 'grátis' in free_shipping:
-                            free_shipping = 'Frete grátis'
-                        else:
-                            free_shipping = None
-                    except:
-                        try:
-                            xpath = './/div//div[2]//div[3]//div[1]//div[2]//div//p'
-                            free_shipping = parent.find_element(By.XPATH, xpath)
-
-                            if 'gratis' in free_shipping or 'grátis' in free_shipping:
-                                free_shipping = 'Frete grátis'
-                            else:
-                                free_shipping = None
-                        except:
-                            free_shipping = None
-
-            shippings.append(free_shipping)
+            if shipping:
+                shippings.append(True)
+            else:
+                shippings.append(None)
 
         return shippings
 
-    # otimizar
     def products_store(self) -> list:
         stores = []
 
         for parent in self.parents:
+            xpath_name = './/p[@class="ui-search-official-store-label ' \
+                         'ui-search-item__group__element ui-search-color--GRAY"]'
+            xpath_link = './/a[@class="ui-search-official-store-item__link ui-search-link"]'
+
             try:
-                store_name = parent.find_element(By.XPATH, './/div//div[2]//div[1]//a[2]//p').text
-                store_name = ' '.join(store_name.split(' ')[2::])
-
-                store_link = parent.find_element(By.XPATH, './/div//div[2]//div[1]//a[2]')
-                store_link = store_link.get_attribute('href')
-
-                store = f'{store_name} ({store_link})'
+                store_name = parent.find_element(By.XPATH, xpath_name).text
             except:
-                try:
-                    store = parent.find_element(By.XPATH, './/div//a//div//div[3]//p').text
-                    store = ' '.join(store.split(' ')[1::])
+                store_name = None
 
-                    if 'gratis' in store or 'grátis' in store:
-                        store = None
-                except:
-                    try:
-                        store_name = parent.find_element(By.XPATH, './/div//div[2]//div[2]//a[2]//p').text
-                        store_name = ' '.join(store_name.split(' ')[2::])
+            try:
+                store_link = parent.find_element(By.XPATH, xpath_link).get_attribute('href')
+            except:
+                store_link = None
 
-                        store_link = parent.find_element(By.XPATH, './/div//div[2]//div[2]//a[2]')
-                        store_link = store_link.get_attribute('href')
+            if store_name and (store_name.startswith('Vendido') or store_name.startswith('vendido')):
+                store_name = ' '.join(store_name.split(' ')[2::])
+            elif store_name and (store_name.startswith('Por') or store_name.startswith('por')):
+                store_name = ' '.join(store_name.split(' ')[1::])
 
-                        store = f'{store_name} ({store_link})'
-                    except:
-                        try:
-                            store = parent.find_element(By.XPATH, './/div//a//div//div[4]//p').text
-                            store = ' '.join(store.split(' ')[1::])
-
-                            if 'gratis' in store or 'grátis' in store:
-                                store = None
-                        except:
-                            try:
-                                store = parent.find_element(By.XPATH, './/div//a//div[1]//div[2]//p').text
-                                store = ' '.join(store.split(' ')[1::])
-
-                                if 'gratis' in store or 'grátis' in store:
-                                    store = None
-                            except:
-                                store = None
-
-            stores.append(store)
+            if store_name and store_link:
+                stores.append(f'{store_name} ({store_link})')
+            elif store_name:
+                stores.append(store_name)
+            else:
+                stores.append(None)
 
         return stores
 
-    # otimizar
     def next_page(self) -> None:
-        url_div = self.driver.find_elements(By.CLASS_NAME, 'andes-pagination__arrow-title')
+        class_name = 'andes-pagination__button.andes-pagination__button--next'
+        next_page_div = self.driver.find_element(By.CLASS_NAME, class_name)
+        next_page = next_page_div.find_element(By.XPATH, './/a//span')
+        next_page.click()
 
-        for url in url_div:
-            if url.text == 'Seguinte':
-                url.click()
-                break
+    def quit_driver(self):
+        self.driver.quit()
