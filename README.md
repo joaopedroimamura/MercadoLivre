@@ -37,6 +37,9 @@ necessário instalar as dependências listadas no arquivo [requirements.txt](req
 Essa etapa pode ser concluída de forma fácil com o seguinte comando: `pip install -r requirements.txt`.
 Também é possível instalar as dependências através de plugins como [Requirements](https://plugins.jetbrains.com/plugin/10837-requirements).
 
+## Execução
+
+Para executar é necessário apenas rodar o arquivo [main.py](main.py) com o seguinte comando: `python main.py`
 
 ## Funcionamento
 
@@ -74,4 +77,6 @@ Acredito que esse tempo possa ser modificado de acordo com a velocidade da inter
 Dessa forma, se estiver obtendo imagens codificadas em base 64 é necessário aumentar
 o tempo de sleep e caso tudo esteja ocorrendo sem anomalias pode-se tentar diminuir
 esse intervalo. O mesmo vale para a linha 34 de [main.py](main.py).
+
+
 
