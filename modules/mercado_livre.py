@@ -11,38 +11,53 @@ class MercadoLivre:
         self.search_text = search_text
         self.driver = driver
         self.page = page
+        self.control_print = True
+        self.valid_page = True
 
         if self.page == 1:
             self.open_site()
             self.search_product()
+            self.store_page()
 
-        self.scroll()
-        self.parents = self.products_list()
+        if self.valid_page:
+            self.scroll()
+            self.parents = self.products_list()
 
     def open_site(self) -> None:
+        print('\nAbrindo navegador...')
         self.driver.maximize_window()
         self.driver.get(self.url_home)
 
     def search_product(self) -> None:
+        print('Pesquisando produto...\n')
         text_input = self.driver.find_element(By.NAME, 'as_word')
         text_input.send_keys(self.search_text, Keys.ENTER)
 
+    def store_page(self) -> None:
+        if 'store' in self.driver.current_url:
+            self.valid_page = False
+
     def scroll(self):
+        print(f'Rolando página {self.page}...')
         y = 1000
 
         for _ in range(20):
             self.driver.execute_script(f"window.scrollTo(0, {y})")
             y += 1000
-            sleep(.6)
+            sleep(.2)
 
     def products_list(self) -> list:
+        print(f'Obtendo lista de produtos (página {self.page})...')
         return self.driver.find_elements(By.CLASS_NAME, 'ui-search-result__wrapper')
 
     def products_name(self) -> list:
+        if self.control_print:
+            print(f'Obtendo nome dos produtos (página {self.page})...')
         names = self.driver.find_elements(By.CLASS_NAME, 'ui-search-item__title')
         return [name.text for name in names]
 
     def products_price(self) -> list:
+        print(f'Obtendo preço dos produtos (página {self.page})...')
         prices = []
         price_divs = self.driver.find_elements(By.CLASS_NAME, 'ui-search-price.ui-search-price--size-medium')
 
@@ -62,6 +77,7 @@ class MercadoLivre:
                 format_price = currency(price, grouping=True)
                 prices.append(format_price)
 
+        self.control_print = False
         difference = abs(len(self.products_name()) - len(prices))
 
         # remove preço de produtos em anúncio
@@ -71,6 +87,7 @@ class MercadoLivre:
         return prices
 
     def products_price_installment(self) -> list:
+        print(f'Obtendo parcelas dos produtos (página {self.page})...')
         prices = []
         texts1 = []
         texts2 = []
@@ -171,13 +188,20 @@ class MercadoLivre:
 
         for cont in range(len(prices)):
             if texts2:
-                installments.append(f'{texts2[cont]}de {prices[cont]}')
+                if texts2[cont] is None:
+                    installments.append(None)
+                else:
+                    installments.append(f'{texts2[cont]}de {prices[cont]}')
             else:
-                installments.append(f'{texts1[cont]}de {prices[cont]}')
+                if texts1[cont] is None:
+                    installments.append(None)
+                else:
+                    installments.append(f'{texts1[cont]}de {prices[cont]}')
 
         return installments
 
     def products_image(self) -> list:
+        print(f'Obtendo imagens dos produtos (página {self.page})...')
         images = []
 
         for parent in self.parents:
@@ -187,6 +211,7 @@ class MercadoLivre:
         return images
 
     def products_link(self) -> list:
+        print(f'Obtendo link dos produtos (página {self.page})...')
         links = []
 
         # region os links podem ter duas classes diferentes
@@ -202,6 +227,7 @@ class MercadoLivre:
         return links
 
     def products_shipping(self) -> list:
+        print(f'Obtendo frete dos produtos (página {self.page})...')
         shippings = []
 
         for parent in self.parents:
@@ -220,6 +246,7 @@ class MercadoLivre:
         return shippings
 
     def products_store(self) -> list:
+        print(f'Obtendo loja dos produtos (página {self.page})...')
         stores = []
 
         for parent in self.parents:
@@ -252,10 +279,14 @@ class MercadoLivre:
         return stores
 
     def next_page(self) -> None:
+        if self.page < 5:
+            print('\nTrocando de página...\n')
+
         class_name = 'andes-pagination__button.andes-pagination__button--next'
         next_page_div = self.driver.find_element(By.CLASS_NAME, class_name)
         next_page = next_page_div.find_element(By.XPATH, './/a//span')
         next_page.click()
 
     def quit_driver(self):
+        print('\nEncerrando conexão...')
         self.driver.quit()

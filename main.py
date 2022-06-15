@@ -4,11 +4,9 @@ from os import environ
 from selenium import webdriver
 from selenium.webdriver.chrome import service
 from time import sleep
+from time import time
 
 from modules.mercado_livre import MercadoLivre
-
-# colocar prints para usar como logs
-# abrir navegador no modo anonimo, deixar opcional se quer tela minimizada ou maximizada
 
 
 def solution():
@@ -16,19 +14,24 @@ def solution():
     success = True
     search_text = input('Digite o termo de busca: ')
 
+    chrome_options = webdriver.ChromeOptions()
+    chrome_options.add_argument('--incognito')
+    chrome_options.add_argument('--headless')
+    chrome_options.add_argument("--window-size=1920,1080")
+
     driver_path = environ.get('DRIVER_PATH')
     serv = service.Service(driver_path)
-    driver = webdriver.Chrome(service=serv)
+    driver = webdriver.Chrome(service=serv, options=chrome_options)
 
     for page in range(1, 6):
         mercado_livre = MercadoLivre(search_text=search_text, driver=driver, page=page)
 
-        if 'store' in driver.current_url:
+        if not mercado_livre.valid_page:
+            print('Essa é uma página de loja! O programa será encerrado sem nenhum output!')
             success = False
-            print('Essa pesquisa retorna uma página de loja!')
             break
 
-        sleep(.5)
+        sleep(.3)
 
         names = mercado_livre.products_name()
         prices = mercado_livre.products_price()
@@ -60,7 +63,12 @@ def solution():
         with open(f'.\\outputs\\{file_name}.json', mode='w', encoding='utf-8') as file:
             dump(products, file, indent=4, ensure_ascii=False)
 
+        print('\nO programa foi encerrado com sucesso! Veja seu arquivo .json na pasta de outputs!')
+
 
 if __name__ == '__main__':
+    start = time()
     solution()
+    execution_time = time() - start
 
+    print(f'Tempo de execução foi de{execution_time: .2f} segundos.')
