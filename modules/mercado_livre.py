@@ -11,7 +11,6 @@ class MercadoLivre:
         self.search_text = search_text
         self.driver = driver
         self.page = page
-        self.control_print = True
         self.valid_page = True
 
         if self.page == 1:
@@ -24,20 +23,36 @@ class MercadoLivre:
             self.parents = self.products_list()
 
     def open_site(self) -> None:
+        """
+        Abre o navegador na página do Mercado Livre
+        """
+
         print('\nAbrindo navegador...')
         self.driver.maximize_window()
         self.driver.get(self.url_home)
 
     def search_product(self) -> None:
+        """
+        Procura o produto na barra de pesquisa
+        """
+
         print('Pesquisando produto...\n')
         text_input = self.driver.find_element(By.NAME, 'as_word')
         text_input.send_keys(self.search_text, Keys.ENTER)
 
     def store_page(self) -> None:
+        """
+        Verifica se o site é uma página que retorna produtos
+        """
+
         if 'store' in self.driver.current_url:
             self.valid_page = False
 
     def scroll(self):
+        """
+        Rola a página para carregar as fotos
+        """
+
         print(f'Rolando página {self.page}...')
         y = 1000
 
@@ -47,16 +62,29 @@ class MercadoLivre:
             sleep(.2)
 
     def products_list(self) -> list:
+        """
+        Retorna lista da div principal de cada produto
+        """
+
         print(f'Obtendo lista de produtos (página {self.page})...')
         return self.driver.find_elements(By.CLASS_NAME, 'ui-search-result__wrapper')
 
-    def products_name(self) -> list:
-        if self.control_print:
+    def products_name(self, n: int) -> list:
+        """
+        Retorna lista de nomes de cada produto
+        """
+
+        if n == 1:
             print(f'Obtendo nome dos produtos (página {self.page})...')
+
         names = self.driver.find_elements(By.CLASS_NAME, 'ui-search-item__title')
         return [name.text for name in names]
 
     def products_price(self) -> list:
+        """
+        Retorna lista de preços de cada produto
+        """
+
         print(f'Obtendo preço dos produtos (página {self.page})...')
         prices = []
         price_divs = self.driver.find_elements(By.CLASS_NAME, 'ui-search-price.ui-search-price--size-medium')
@@ -77,8 +105,7 @@ class MercadoLivre:
                 format_price = currency(price, grouping=True)
                 prices.append(format_price)
 
-        self.control_print = False
-        difference = abs(len(self.products_name()) - len(prices))
+        difference = abs(len(self.products_name(0)) - len(prices))
 
         # remove preço de produtos em anúncio
         for _ in range(difference):
@@ -87,6 +114,10 @@ class MercadoLivre:
         return prices
 
     def products_price_installment(self) -> list:
+        """
+        Retorna lista de parcelas e preços de cada produto
+        """
+
         print(f'Obtendo parcelas dos produtos (página {self.page})...')
         prices = []
         texts1 = []
@@ -201,6 +232,10 @@ class MercadoLivre:
         return installments
 
     def products_image(self) -> list:
+        """
+        Retorna lista de imagens de cada produto
+        """
+
         print(f'Obtendo imagens dos produtos (página {self.page})...')
         images = []
 
@@ -211,6 +246,10 @@ class MercadoLivre:
         return images
 
     def products_link(self) -> list:
+        """
+        Retorna lista de links de cada produto
+        """
+
         print(f'Obtendo link dos produtos (página {self.page})...')
         links = []
 
@@ -227,6 +266,10 @@ class MercadoLivre:
         return links
 
     def products_shipping(self) -> list:
+        """
+        Retorna lista de fretes de cada produto
+        """
+
         print(f'Obtendo frete dos produtos (página {self.page})...')
         shippings = []
 
@@ -234,18 +277,18 @@ class MercadoLivre:
             xpath = './/p[@class="ui-search-item__shipping ui-search-item__shipping--free"]'
 
             try:
-                shipping = parent.find_element(By.XPATH, xpath).text
-            except:
-                shipping = None
-
-            if shipping:
+                parent.find_element(By.XPATH, xpath)
                 shippings.append(True)
-            else:
+            except:
                 shippings.append(None)
 
         return shippings
 
     def products_store(self) -> list:
+        """
+        Retorna lista de lojas de cada produto
+        """
+
         print(f'Obtendo loja dos produtos (página {self.page})...')
         stores = []
 
@@ -279,6 +322,10 @@ class MercadoLivre:
         return stores
 
     def next_page(self) -> None:
+        """
+        Passa para a próxima página
+        """
+
         if self.page < 5:
             print('\nTrocando de página...\n')
 
@@ -288,5 +335,9 @@ class MercadoLivre:
         next_page.click()
 
     def quit_driver(self):
+        """
+        Fecha o driver
+        """
+
         print('\nEncerrando conexão...')
         self.driver.quit()

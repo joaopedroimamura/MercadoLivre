@@ -33,7 +33,7 @@ def solution():
 
         sleep(.3)
 
-        names = mercado_livre.products_name()
+        names = mercado_livre.products_name(1)
         prices = mercado_livre.products_price()
         links = mercado_livre.products_link()
         shippings = mercado_livre.products_shipping()

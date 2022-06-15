@@ -15,7 +15,7 @@ correspondente ao seu navegador.
 2. Arquivo `.env`: para rodar o programa é necessário criar um 
 arquivo de variáveis de ambiente. Apenas uma variável será inicializada
 por lá (DRIVER_PATH='caminho_para_chrome_driver') e depois será chamada
-na linha 15 de [main.py](main.py).
+na linha 22 de [main.py](main.py).
 
 3. Plugin para `.env`: um plugin está instalado no PyCharm do
 principal contribuidor (https://plugins.jetbrains.com/plugin/7861-envfile).
@@ -73,5 +73,5 @@ A função [scroll()](./modules/mercado_livre.py) possui por padrão um sleep de
 Acredito que esse tempo possa ser modificado de acordo com a velocidade da internet.
 Dessa forma, se estiver obtendo imagens codificadas em base 64 é necessário aumentar
 o tempo de sleep e caso tudo esteja ocorrendo sem anomalias pode-se tentar diminuir
-esse intervalo. O mesmo vale para a linha 33 de [main.py](main.py).
+esse intervalo. O mesmo vale para a linha 34 de [main.py](main.py).
 
